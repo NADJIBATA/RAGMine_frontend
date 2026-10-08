@@ -1,0 +1,27 @@
+<div *ngIf="!isSmallScreen" class="flex items-center gap-1">
+  <button
+    *ngFor="let mode of modes"
+    (click)="select(mode.value)"
+    [disabled]="disabled"
+    [title]="mode.description"
+    class="flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-medium transition border disabled:opacity-40 disabled:cursor-not-allowed"
+    [ngClass]="value === mode.value
+      ? 'bg-[rgb(0,107.5304347826,229)] dark:bg-gray-500 dark:text-white text-white border-gray-300 dark:border-gray-500 shadow-sm'
+      : 'border-transparent text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-600 dark:hover:text-gray-100'"
+  >
+    <span class="text-sm">{{ mode.icon }}</span>
+    <span>{{ mode.label }}</span>
+  </button>
+</div>
+
+<select
+  *ngIf="isSmallScreen"
+  [disabled]="disabled"
+  [ngModel]="value"
+  (change)="onSelectChange($event)"
+  class="text-sm font-medium bg-[#f4f6f8] dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg px-2 py-1.5 outline-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+>
+  <option *ngFor="let mode of modes" [value]="mode.value" [title]="mode.description">
+    {{ mode.icon }} {{ mode.label }}
+  </option>
+</select>

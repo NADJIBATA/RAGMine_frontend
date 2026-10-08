@@ -1,0 +1,149 @@
+<div class="flex flex-col h-screen bg-[#f7fafc] dark:bg-gray-900 transition-colors">
+
+  <header class="bg-white dark:bg-gray-800 h-16 flex justify-center items-center px-6 shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex-shrink-0">
+
+  <div *ngIf="!isMobile" class="flex items-center text-[rgb(0,107.5304347826,229)] font-bold text-3xl justify-between mobile:hide">
+    <span class="text-black dark:text-gray-100 text-[16px] font-[550] flex items-center justify-evenly w-fit">
+      <img
+        [src]="'https://www.gravatar.com/avatar/' + gravatarId + '?rating=PG&size=50&default=monsterid'"
+        class="h-[35px] w-[35px] mx-2 rounded-full"
+      />
+      {{ firstname }} {{ lastname }}
+    </span>
+  </div>
+
+  <div class="ml-auto flex items-center gap-4" [ngClass]="isMobile ? 'w-full justify-around' : ''">
+
+    <div class="flex items-center justify-evenly max-w-5xl bg-[#f4f6f8] dark:bg-gray-700 border border-[#e7eaef] dark:border-gray-600 rounded-lg shadow-sm" [ngClass]="isMobile ? 'w-fit px-1' : '' ">
+      <span *ngIf="!isMobile" class="text-sm text-gray-800 font-medium px-2 dark:text-white">Mode :</span>
+      <app-intent-selector
+        [value]="intent"
+        [disabled]="loading"
+        (valueChange)="handleIntentChange($event)"
+      ></app-intent-selector>
+    </div>
+
+    <div class="flex items-center justify-evenly max-w-5xl bg-[#f4f6f8] dark:bg-gray-700 border border-[#e7eaef] dark:border-gray-600 rounded-lg shadow-sm " [ngClass]="isMobile ? 'w-fit px-1' : '' ">
+      <span *ngIf="!isMobile"  class="text-sm text-gray-800 font-medium px-2 dark:text-white">Raisonnement :</span>
+      <app-reasoning-selector
+        [value]="reasoning"
+        [disabled]="loading"
+        (valueChange)="handleReasoningChange($event)"
+      ></app-reasoning-selector>
+    </div>
+
+
+    <button
+      (click)="handleNewConversation()"
+      title="Nouvelle conversation (Ctrl K)"
+      class="bg-[#f4f6f8] dark:hover:bg-gray-500 dark:bg-gray-700 border border-[#e7eaef] dark:border-gray-600 hover:bg-[rgb(0,107.5304347826,229)] hover:text-white text-sm font-[550] p-2 chat:px-1 chat:py-1.5 shadow-sm rounded-lg transition flex items-center justify-center chat:justify-evenly w-fit chat:w-48 text-black dark:text-white gap-1"
+    >
+      <ng-icon name="lucideCirclePlus" class="text-xl w-full"></ng-icon>
+      <span class="hidden chat:inline">Nouvelle conversation</span>
+    </button>
+
+    <button
+      (click)="handleLogout()"
+      title="Déconnexion"
+      class="text-sm text-white border border-white/30 bg-[rgb(0,107.5304347826,229)] hover:bg-[rgb(0,90,190)] font-[550] p-2 chat:px-3 chat:py-1.5 rounded-lg shadow-sm transition flex items-center justify-center chat:justify-evenly gap-1 w-fit chat:w-40"
+    >
+      <ng-icon name="octSignOut" class="text-lg text-white w-full"></ng-icon>
+      <span class="hidden chat:inline">Déconnexion</span>
+    </button>
+
+
+    <button
+      (click)="toggleTheme()"
+      [title]="theme.isDark() ? 'Mode clair' : 'Mode sombre'"
+      [ngClass]="isMobile ? 'ml-0' : 'ml-4'"
+      class=" bg-[#f4f6f8] dark:bg-gray-700 border border-[#e7eaef] dark:border-gray-600 hover:bg-white dark:text-white dark:hover:bg-gray-600 p-2 chat:p-1 rounded-lg shadow-sm transition flex items-center justify-center w-fit h-fit"
+    >
+      <ng-icon *ngIf="theme.isDark()" name="lucideSun" class="text-xl text-gray-700 w-[16px] h-[16px]"></ng-icon>
+      <ng-icon *ngIf="!theme.isDark()" name="lucideMoon" class="text-xl text-yellow-300"></ng-icon>
+    </button>
+  </div>
+
+</header>
+
+
+  <!-- Messages -->
+  <div class="bg-[#f7fafc] dark:bg-gray-900 flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4 w-full relative  ">
+
+    <app-suggestions *ngIf="messages.length === 0 && !loading " class="relative w-full h-full" (select)="handleSend($event)"></app-suggestions>
+
+    <app-message
+      *ngFor="let msg of messages"
+      [role]="msg.role"
+      [content]="msg.content"
+      [toolCalls]="msg.toolCalls || []"
+      [login]="login"
+      [firstname]="firstname"
+    ></app-message>
+
+    <app-typing-indicator *ngIf="loading"></app-typing-indicator>
+    <div #bottomRef></div>
+  </div>
+
+  <!-- Input -->
+  <div class="bg-white dark:bg-gray-800 px-6 py-4 flex-shrink-0">
+    <div class="flex gap-3 max-w-4xl mx-auto">
+      <div class="flex-1 relative">
+        <textarea
+          #inputRef
+          [(ngModel)]="input"
+          (keydown)="handleKey($event)"
+          (input)="autoResize($event)"
+          placeholder="Posez votre question... (Ctrl / pour focus)"
+          rows="1"
+          style="height: 180px; max-height: 120px;"
+          class="w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:ring-2 focus:ring-[#006ce5]/2 rounded-xl text-sm resize-none outline-none transition leading-relaxed"
+        ></textarea>
+
+        <!-- 🎤 Bouton micro -->
+        <button
+          *ngIf="voiceSupported"
+          (click)="toggleVoiceInput()"
+          [class.text-gray-400]="isListening"
+          [class.animate-pulse]="isListening"
+          [title]="isListening ? 'Arrêter la dictée' : 'Dicter ma question'"
+          class="absolute right-3 top-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition text-gray-500 dark:text-gray-300"
+        >
+          <ng-icon [name]="isListening ? 'lucideMicOff' : 'lucideMic'" class="text-xl"></ng-icon>
+        </button>
+      </div>
+
+      <button
+        *ngIf="loading"
+        (click)="handleCancel()"
+        [disabled]="cancelling"
+        title="Arrêter la génération"
+        class="w-12 h-12 bg-gray-700 hover:bg-gray-900 text-white rounded-xl flex items-center justify-center text-xl transition shadow-sm hover:shadow-md flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <svg *ngIf="cancelling" class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        <svg *ngIf="!cancelling" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
+          <rect x="5" y="5" width="14" height="14" rx="2"/>
+        </svg>
+      </button>
+
+      <button
+        *ngIf="!loading"
+        (click)="handleSend()"
+        [disabled]="!input.trim()"
+        class="w-12 h-12 bg-[rgb(0,107.5304347826,229)] text-white rounded-xl flex items-center justify-center text-xl disabled:bg-gray-200 disabled:cursor-not-allowed transition shadow-sm hover:shadow-md flex-shrink-0"
+      >
+        ➤
+      </button>
+    </div>
+
+    <p *ngIf="loading" class="text-center text-xs text-gray-400 dark:text-gray-300 mt-2 ">
+      {{ cancelling ? 'Annulation en cours…' : 'Génération en cours - cliquez ⬛ pour arrêter' }}
+    </p>
+
+    <p *ngIf="isListening" class="text-center text-xs text-gray-400 mt-2 animate-pulse">
+      🎤 Écoute en cours...
+    </p>
+  </div>
+</div>

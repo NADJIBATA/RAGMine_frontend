@@ -1,0 +1,27 @@
+  # ───────────────────────────────────────────
+  #   FRONTEND 
+  # ───────────────────────────────────────────
+
+networks:
+  ragmine_network:
+    external: true
+    name: ragmine_backend_ragmine_network
+
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ragmine_frontend_angular
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    networks:
+      - ragmine_network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
